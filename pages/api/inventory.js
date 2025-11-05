@@ -6,8 +6,8 @@
 const NodeCache = require('node-cache');
 const { fetchAllInventory, getFilterOptions } = require('../../lib/googleSheets');
 
-// Cache for 5 minutes (300 seconds)
-const cache = new NodeCache({ stdTTL: 300 });
+// Cache for 2 hours (7200 seconds) - optimized for production
+const cache = new NodeCache({ stdTTL: 7200 });
 
 export default async function handler(req, res) {
   // Enable CORS for public access

@@ -102,13 +102,9 @@ export default function Home() {
 
   const dynamicOptions = getDynamicFilterOptions();
 
-  // Initial load - always fetch fresh data
+  // Initial load - use cached data if available (2 hour cache)
   useEffect(() => {
-    fetchInventory(true); // Force fresh data on page load
-
-    // Auto-refresh every 60 minutes
-    const interval = setInterval(() => fetchInventory(true), 60 * 60 * 1000);
-    return () => clearInterval(interval);
+    fetchInventory(false); // Use cache on page load, only refresh when user clicks button
   }, []);
 
   // Apply filters
@@ -411,24 +407,36 @@ export default function Home() {
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
           {/* Status Bar */}
-          <div className="bg-white rounded-lg shadow p-4 mb-6 flex justify-between items-center">
-            <div>
-              <span className="text-gray-600">Total Items: </span>
-              <span className="font-bold text-lg">{filteredInventory.length}</span>
-              <span className="text-gray-400 ml-2">/ {inventory.length}</span>
-            </div>
-            {lastUpdated && (
-              <div className="text-sm text-gray-500">
-                Last updated: {lastUpdated.toLocaleString()}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-gray-600">Total Items: </span>
+                <span className="font-bold text-lg">{filteredInventory.length}</span>
+                <span className="text-gray-400 ml-2">/ {inventory.length}</span>
               </div>
-            )}
-            <button
-              onClick={fetchInventory}
-              disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
-            >
-              🔄 {loading ? 'Loading...' : 'Refresh Now'}
-            </button>
+              <div className="flex items-center gap-4">
+                {lastUpdated && (
+                  <div className="text-right">
+                    <div className="text-xs text-gray-500 uppercase">Last Data Fetch</div>
+                    <div className="text-sm font-medium text-gray-700">
+                      {lastUpdated.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => fetchInventory(true)}
+                  disabled={loading}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 whitespace-nowrap"
+                >
+                  🔄 {loading ? 'Refreshing...' : 'Refresh Data'}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Error Message */}
