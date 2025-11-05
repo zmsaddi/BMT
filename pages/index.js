@@ -22,6 +22,7 @@ export default function Home() {
   const [minWidth, setMinWidth] = useState('');
   const [maxWidth, setMaxWidth] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
+  const [selectedNotes, setSelectedNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Pagination
@@ -180,6 +181,13 @@ export default function Home() {
       filtered = filtered.filter(item => item.qty === parseInt(selectedQty));
     }
 
+    // Notes filter
+    if (selectedNotes === 'with') {
+      filtered = filtered.filter(item => item.notes && item.notes.trim() !== '');
+    } else if (selectedNotes === 'without') {
+      filtered = filtered.filter(item => !item.notes || item.notes.trim() === '');
+    }
+
     // Search query (searches across all fields)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -196,7 +204,7 @@ export default function Home() {
 
     setFilteredInventory(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, minLength, maxLength, minWidth, maxWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, selectedQty, searchQuery]);
+  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, minLength, maxLength, minWidth, maxWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, selectedQty, selectedNotes, searchQuery]);
 
   // Reset all filters
   const resetFilters = () => {
@@ -212,6 +220,7 @@ export default function Home() {
     setSelectedGrade('');
     setSelectedShelf('');
     setSelectedColor('');
+    setSelectedNotes('');
     setSearchQuery('');
   };
 
@@ -340,7 +349,7 @@ export default function Home() {
               </div>
 
               {/* Row 2: Additional filters */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
                 {/* Qty */}
                 <div>
                   <label className="text-xs text-blue-100 mb-1 block">Qty</label>
@@ -413,6 +422,20 @@ export default function Home() {
                     {dynamicOptions.colors?.map(color => (
                       <option key={color} value={color}>{color}</option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Notes</label>
+                  <select
+                    value={selectedNotes}
+                    onChange={(e) => setSelectedNotes(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">All</option>
+                    <option value="with">With Notes</option>
+                    <option value="without">Without Notes</option>
                   </select>
                 </div>
               </div>
