@@ -467,7 +467,20 @@ export default function Home() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {currentItems.map((item, index) => (
                         <tr key={`${item.material}-${item.inventoryId}-${index}`} className="hover:bg-gray-50" style={{backgroundColor: item.hexColor ? `${item.hexColor}20` : 'transparent'}}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.inventoryId}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {item.inventoryIdLink ? (
+                              <a
+                                href={item.inventoryIdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                              >
+                                {item.inventoryId} 🔗
+                              </a>
+                            ) : (
+                              <span className="text-gray-900">{item.inventoryId}</span>
+                            )}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                               {item.material}
