@@ -11,7 +11,10 @@ let mainWindow;
 let nextServer;
 
 // Check if running in development or production
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = !app.isPackaged;
+
+// Get the correct paths for packaged app
+const appPath = isDev ? path.join(__dirname, '..') : process.resourcesPath;
 
 function createWindow() {
   // Create the browser window
@@ -23,16 +26,16 @@ function createWindow() {
       contextIsolation: true,
       enableRemoteModule: false,
     },
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: path.join(appPath, 'public/icon.png'),
     title: 'BMT Inventory System',
   });
 
   // Load the Next.js app
+  mainWindow.loadURL('http://localhost:3000');
+
+  // Open DevTools in development
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadURL('http://localhost:3000');
   }
 
   // Handle window closed
@@ -43,34 +46,76 @@ function createWindow() {
 
 function startNextServer() {
   return new Promise((resolve) => {
-    // Start Next.js server
-    const nextBin = path.join(__dirname, '../node_modules/.bin/next' + (process.platform === 'win32' ? '.cmd' : ''));
+    console.log('Starting Next.js server...');
+    console.log('App path:', appPath);
+    console.log('Is packaged:', app.isPackaged);
 
-    nextServer = spawn(nextBin, ['start', '-p', '3000'], {
-      cwd: path.join(__dirname, '..'),
-      env: { ...process.env, NODE_ENV: 'production' },
-      shell: true,
+    // In packaged app, use node.exe from the app directory
+    let nodePath, nextPath, workingDir;
+
+    if (app.isPackaged) {
+      // Packaged app paths
+      nodePath = process.execPath; // Use Electron's node
+      nextPath = path.join(process.resourcesPath, 'app', 'node_modules', 'next', 'dist', 'bin', 'next');
+      workingDir = path.join(process.resourcesPath, 'app');
+    } else {
+      // Development paths
+      nodePath = process.execPath;
+      nextPath = path.join(__dirname, '..', 'node_modules', 'next', 'dist', 'bin', 'next');
+      workingDir = path.join(__dirname, '..');
+    }
+
+    console.log('Node path:', nodePath);
+    console.log('Next path:', nextPath);
+    console.log('Working dir:', workingDir);
+
+    // Start Next.js using node directly
+    nextServer = spawn(process.execPath, [nextPath, 'start', '-p', '3000'], {
+      cwd: workingDir,
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: '3000'
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
     });
 
     nextServer.stdout.on('data', (data) => {
-      console.log(`Next.js: ${data}`);
-      if (data.toString().includes('Ready')) {
+      const output = data.toString();
+      console.log(`Next.js: ${output}`);
+      if (output.includes('Ready') || output.includes('started server') || output.includes('Local:')) {
+        console.log('Next.js server is ready!');
         resolve();
       }
     });
 
     nextServer.stderr.on('data', (data) => {
-      console.error(`Next.js Error: ${data}`);
+      console.error(`Next.js Error: ${data.toString()}`);
     });
 
-    // Wait 3 seconds and resolve anyway
-    setTimeout(resolve, 3000);
+    nextServer.on('error', (error) => {
+      console.error('Failed to start Next.js server:', error);
+      resolve(); // Resolve anyway to show error in window
+    });
+
+    nextServer.on('close', (code) => {
+      console.log(`Next.js server exited with code ${code}`);
+    });
+
+    // Wait 5 seconds and resolve anyway
+    setTimeout(() => {
+      console.log('Timeout reached, proceeding to open window...');
+      resolve();
+    }, 5000);
   });
 }
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
   console.log('Starting BMT Inventory System...');
+  console.log('Electron version:', process.versions.electron);
+  console.log('Node version:', process.versions.node);
 
   // Start Next.js server first
   await startNextServer();
@@ -89,6 +134,7 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', function () {
   // Kill the Next.js server
   if (nextServer) {
+    console.log('Killing Next.js server...');
     nextServer.kill();
   }
 
@@ -99,6 +145,12 @@ app.on('window-all-closed', function () {
 app.on('will-quit', () => {
   // Kill the Next.js server
   if (nextServer) {
+    console.log('Killing Next.js server on quit...');
     nextServer.kill();
   }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
 });
