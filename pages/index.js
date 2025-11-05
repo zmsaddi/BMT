@@ -296,7 +296,7 @@ export default function Home() {
       grade: item.grade,
       shelf: item.shelf,
       notes: item.notes,
-      hexColor: item.hexColor,
+      hexColor: '', // Default to "No Change"
     });
     setSaveError('');
     setShowEditModal(true);
@@ -938,14 +938,19 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Fill Color
+                    Fill Color (A to I)
                   </label>
-                  <input
-                    type="color"
+                  <select
                     value={editFormData.hexColor}
                     onChange={(e) => setEditFormData({...editFormData, hexColor: e.target.value})}
-                    className="w-full h-10 px-1 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">No Change</option>
+                    <option value="#FF0000">Red</option>
+                    <option value="#0000FF">Blue</option>
+                    <option value="#00FF00">Green</option>
+                    <option value="#FFFF00">Yellow</option>
+                  </select>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-gray-700 text-sm font-bold mb-2">
