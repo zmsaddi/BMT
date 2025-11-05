@@ -25,6 +25,19 @@ export default function Home() {
   const [selectedNotes, setSelectedNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Auth states
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  // Edit states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
@@ -224,6 +237,107 @@ export default function Home() {
     setSearchQuery('');
   };
 
+  // Auth functions
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+
+    const formData = new FormData(e.target);
+    const loginUsername = formData.get('username');
+    const password = formData.get('password');
+
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsLoggedIn(true);
+        setUsername(loginUsername);
+        setShowLoginModal(false);
+        localStorage.setItem('bmt_auth', loginUsername);
+      } else {
+        setLoginError(data.error || 'Login failed');
+      }
+    } catch (error) {
+      setLoginError('Network error. Please try again.');
+      console.error('Login error:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUsername('');
+    localStorage.removeItem('bmt_auth');
+  };
+
+  // Check for existing session on load
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('bmt_auth');
+    if (savedAuth) {
+      setIsLoggedIn(true);
+      setUsername(savedAuth);
+    }
+  }, []);
+
+  // Edit functions
+  const openEditModal = (item) => {
+    setEditingItem(item);
+    setEditFormData({
+      thickness: item.thickness,
+      length: item.length,
+      width: item.width,
+      qty: item.qty,
+      finish: item.finish,
+      grade: item.grade,
+      shelf: item.shelf,
+      notes: item.notes,
+      hexColor: item.hexColor,
+    });
+    setSaveError('');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+
+    setSaveLoading(true);
+    setSaveError('');
+
+    try {
+      const response = await fetch('/api/update-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inventoryId: editingItem.inventoryId,
+          material: editingItem.material,
+          updates: editFormData,
+          username: username,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Refresh inventory data
+        await fetchInventory(true);
+        setShowEditModal(false);
+        setEditingItem(null);
+      } else {
+        setSaveError(data.error || 'Failed to save changes');
+      }
+    } catch (error) {
+      setSaveError('Network error. Please try again.');
+      console.error('Save error:', error);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   // Pagination
   const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -247,13 +361,35 @@ export default function Home() {
                 <h1 className="text-3xl font-bold">📦 BMT Inventory Viewer</h1>
                 <p className="text-blue-100 mt-2">Real-time materials inventory system</p>
               </div>
-              <button
-                onClick={() => fetchInventory(true)}
-                disabled={loading}
-                className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
-              >
-                🔄 {loading ? 'Loading...' : 'Manual Refresh'}
-              </button>
+              <div className="flex gap-3 items-center">
+                {isLoggedIn && (
+                  <span className="text-blue-100 text-sm">
+                    Logged in as: <strong>{username}</strong>
+                  </span>
+                )}
+                <button
+                  onClick={() => fetchInventory(true)}
+                  disabled={loading}
+                  className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
+                >
+                  🔄 {loading ? 'Loading...' : 'Manual Refresh'}
+                </button>
+                {isLoggedIn ? (
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+                  >
+                    🔓 Logout
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
+                  >
+                    🔐 Login
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Filters in Header */}
@@ -526,6 +662,9 @@ export default function Home() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shelf</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fill Color</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        {isLoggedIn && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -572,6 +711,16 @@ export default function Home() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">{item.notes}</td>
+                          {isLoggedIn && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <button
+                                onClick={() => openEditModal(item)}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium transition"
+                              >
+                                ✏️ Edit
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -614,6 +763,234 @@ export default function Home() {
             <p className="text-gray-400 text-sm mt-2">Real-time sync with Google Sheets • Updates every 5 minutes</p>
           </div>
         </footer>
+
+        {/* Login Modal */}
+        {showLoginModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4 text-gray-800">🔐 Admin Login</h2>
+              <form onSubmit={handleLogin}>
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter username"
+                  />
+                </div>
+                <div className="mb-6">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter password"
+                  />
+                </div>
+                {loginError && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {loginError}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLoginModal(false);
+                      setLoginError('');
+                    }}
+                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition"
+                  >
+                    Login
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {showEditModal && editingItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 my-8">
+              <h2 className="text-2xl font-bold mb-4 text-gray-800">
+                ✏️ Edit Item: {editingItem.inventoryId}
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {/* Read-only fields */}
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Inventory ID (locked)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingItem.inventoryId}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Material (locked)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingItem.material}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+                  />
+                </div>
+
+                {/* Editable fields */}
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Thickness (mm)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.thickness}
+                    onChange={(e) => setEditFormData({...editFormData, thickness: parseFloat(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Length (cm)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.length}
+                    onChange={(e) => setEditFormData({...editFormData, length: parseFloat(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Width (cm)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.width}
+                    onChange={(e) => setEditFormData({...editFormData, width: parseFloat(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={editFormData.qty}
+                    onChange={(e) => setEditFormData({...editFormData, qty: parseInt(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Finish
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.finish}
+                    onChange={(e) => setEditFormData({...editFormData, finish: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Grade
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.grade}
+                    onChange={(e) => setEditFormData({...editFormData, grade: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Shelf
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.shelf}
+                    onChange={(e) => setEditFormData({...editFormData, shelf: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Fill Color
+                  </label>
+                  <input
+                    type="color"
+                    value={editFormData.hexColor}
+                    onChange={(e) => setEditFormData({...editFormData, hexColor: e.target.value})}
+                    className="w-full h-10 px-1 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={editFormData.notes}
+                    onChange={(e) => setEditFormData({...editFormData, notes: e.target.value})}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {saveError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {saveError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                    setSaveError('');
+                  }}
+                  disabled={saveLoading}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={saveLoading}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50"
+                >
+                  {saveLoading ? 'Saving...' : '💾 Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
