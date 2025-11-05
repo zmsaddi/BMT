@@ -701,15 +701,8 @@ export default function Home() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.finish}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.grade}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.shelf}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-6 h-6 rounded border border-gray-300"
-                                style={{backgroundColor: item.hexColor || '#FFFFFF'}}
-                                title={item.hexColor}
-                              ></div>
-                              <span className="text-gray-700">{item.color}</span>
-                            </div>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            {item.color}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">{item.notes}</td>
                           {isLoggedIn && (
