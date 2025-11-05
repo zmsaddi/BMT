@@ -297,6 +297,7 @@ export default function Home() {
       shelf: item.shelf,
       notes: item.notes,
       hexColor: '', // Default to "No Change"
+      inventoryIdLink: item.inventoryIdLink || '', // Link for Inventory ID
     });
     setSaveError('');
     setShowEditModal(true);
@@ -946,11 +947,24 @@ export default function Home() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">No Change</option>
-                    <option value="#FF0000">Red</option>
-                    <option value="#0000FF">Blue</option>
-                    <option value="#00FF00">Green</option>
-                    <option value="#FFFF00">Yellow</option>
+                    <option value="REMOVE">⚪ No Fill (Remove Color)</option>
+                    <option value="#FF0000">🔴 Red</option>
+                    <option value="#0000FF">🔵 Blue</option>
+                    <option value="#00FF00">🟢 Green</option>
+                    <option value="#FFFF00">🟡 Yellow</option>
                   </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    🔗 Inventory ID Link
+                  </label>
+                  <input
+                    type="url"
+                    value={editFormData.inventoryIdLink}
+                    onChange={(e) => setEditFormData({...editFormData, inventoryIdLink: e.target.value})}
+                    placeholder="https://example.com (optional)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-gray-700 text-sm font-bold mb-2">
