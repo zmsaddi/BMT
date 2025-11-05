@@ -33,3 +33,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# electron
+/dist
+/dist-electron
+/*.exe
+*.exe
+*.AppImage
+*.dmg
+*.snap
+/release
+/app-builds
+electron-builder.yml
