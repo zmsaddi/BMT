@@ -128,11 +128,104 @@ export default function Home() {
       </Head>
 
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
+        {/* Header with Filters */}
         <header className="bg-blue-600 text-white shadow-lg">
           <div className="container mx-auto px-4 py-6">
-            <h1 className="text-3xl font-bold">📦 BMT Inventory Viewer</h1>
-            <p className="text-blue-100 mt-2">Real-time materials inventory system</p>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h1 className="text-3xl font-bold">📦 BMT Inventory Viewer</h1>
+                <p className="text-blue-100 mt-2">Real-time materials inventory system</p>
+              </div>
+              <button
+                onClick={fetchInventory}
+                disabled={loading}
+                className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
+              >
+                🔄 {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+
+            {/* Filters in Header */}
+            <div className="bg-blue-700 bg-opacity-50 rounded-lg p-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {/* Material Type */}
+                <div>
+                  <select
+                    value={selectedMaterial}
+                    onChange={(e) => setSelectedMaterial(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                  >
+                    <option value="">All Materials</option>
+                    {filterOptions.materials?.map(material => (
+                      <option key={material} value={material}>{material}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Finish */}
+                <div>
+                  <select
+                    value={selectedFinish}
+                    onChange={(e) => setSelectedFinish(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                  >
+                    <option value="">All Finishes</option>
+                    {filterOptions.finishes?.map(finish => (
+                      <option key={finish} value={finish}>{finish}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Grade */}
+                <div>
+                  <select
+                    value={selectedGrade}
+                    onChange={(e) => setSelectedGrade(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                  >
+                    <option value="">All Grades</option>
+                    {filterOptions.grades?.map(grade => (
+                      <option key={grade} value={grade}>{grade}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Shelf */}
+                <div>
+                  <select
+                    value={selectedShelf}
+                    onChange={(e) => setSelectedShelf(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                  >
+                    <option value="">All Shelves</option>
+                    {filterOptions.shelves?.map(shelf => (
+                      <option key={shelf} value={shelf}>{shelf}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search */}
+                <div className="md:col-span-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                  />
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={resetFilters}
+                  className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-1 rounded-lg text-sm transition"
+                >
+                  ↺ Reset Filters
+                </button>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -165,132 +258,6 @@ export default function Home() {
               ⚠️ Error: {error}
             </div>
           )}
-
-          {/* Filters Panel */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">🔍 Filters</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Material Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Material Type
-                </label>
-                <select
-                  value={selectedMaterial}
-                  onChange={(e) => setSelectedMaterial(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Materials</option>
-                  {filterOptions.materials?.map(material => (
-                    <option key={material} value={material}>{material}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Finish */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Finish
-                </label>
-                <select
-                  value={selectedFinish}
-                  onChange={(e) => setSelectedFinish(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Finishes</option>
-                  {filterOptions.finishes?.map(finish => (
-                    <option key={finish} value={finish}>{finish}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Grade */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grade
-                </label>
-                <select
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Grades</option>
-                  {filterOptions.grades?.map(grade => (
-                    <option key={grade} value={grade}>{grade}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Shelf */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Shelf
-                </label>
-                <select
-                  value={selectedShelf}
-                  onChange={(e) => setSelectedShelf(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Shelves</option>
-                  {filterOptions.shelves?.map(shelf => (
-                    <option key={shelf} value={shelf}>{shelf}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Quantity Range */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Min Quantity
-                </label>
-                <input
-                  type="number"
-                  value={minQty}
-                  onChange={(e) => setMinQty(e.target.value)}
-                  placeholder="Min"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Quantity
-                </label>
-                <input
-                  type="number"
-                  value={maxQty}
-                  onChange={(e) => setMaxQty(e.target.value)}
-                  placeholder="Max"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {/* Search Box */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search
-                </label>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by ID, material, finish, grade, shelf, or notes..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Reset Button */}
-            <div className="mt-4">
-              <button
-                onClick={resetFilters}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition"
-              >
-                ↺ Reset All Filters
-              </button>
-            </div>
-          </div>
 
           {/* Inventory Table */}
           {loading ? (
