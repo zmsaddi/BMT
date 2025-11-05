@@ -17,8 +17,10 @@ export default function Home() {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedInventoryId, setSelectedInventoryId] = useState('');
   const [selectedThickness, setSelectedThickness] = useState('');
-  const [selectedLength, setSelectedLength] = useState('');
-  const [selectedWidth, setSelectedWidth] = useState('');
+  const [minLength, setMinLength] = useState('');
+  const [maxLength, setMaxLength] = useState('');
+  const [minWidth, setMinWidth] = useState('');
+  const [maxWidth, setMaxWidth] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -63,11 +65,19 @@ export default function Home() {
     if (selectedThickness) {
       filteredData = filteredData.filter(item => item.thickness === parseFloat(selectedThickness));
     }
-    if (selectedLength) {
-      filteredData = filteredData.filter(item => item.length === parseFloat(selectedLength));
+    // Length range filter
+    if (minLength) {
+      filteredData = filteredData.filter(item => item.length >= parseFloat(minLength));
     }
-    if (selectedWidth) {
-      filteredData = filteredData.filter(item => item.width === parseFloat(selectedWidth));
+    if (maxLength) {
+      filteredData = filteredData.filter(item => item.length <= parseFloat(maxLength));
+    }
+    // Width range filter
+    if (minWidth) {
+      filteredData = filteredData.filter(item => item.width >= parseFloat(minWidth));
+    }
+    if (maxWidth) {
+      filteredData = filteredData.filter(item => item.width <= parseFloat(maxWidth));
     }
     if (selectedQty) {
       filteredData = filteredData.filter(item => item.qty === parseInt(selectedQty));
@@ -86,12 +96,15 @@ export default function Home() {
     }
 
     // Calculate options from filtered data
+    const lengths = filteredData.map(item => item.length).filter(Boolean);
+    const widths = filteredData.map(item => item.width).filter(Boolean);
+
     return {
       materials: [...new Set(filteredData.map(item => item.material))].sort(),
       inventoryIds: [...new Set(filteredData.map(item => item.inventoryId).filter(Boolean))].sort(),
       thicknesses: [...new Set(filteredData.map(item => item.thickness).filter(Boolean))].sort((a, b) => a - b),
-      lengths: [...new Set(filteredData.map(item => item.length).filter(Boolean))].sort((a, b) => a - b),
-      widths: [...new Set(filteredData.map(item => item.width).filter(Boolean))].sort((a, b) => a - b),
+      maxLength: lengths.length > 0 ? Math.max(...lengths) : 0,
+      maxWidth: widths.length > 0 ? Math.max(...widths) : 0,
       quantities: [...new Set(filteredData.map(item => item.qty).filter(q => q !== null && q !== undefined))].sort((a, b) => a - b),
       finishes: [...new Set(filteredData.map(item => item.finish).filter(Boolean))].sort(),
       grades: [...new Set(filteredData.map(item => item.grade).filter(Boolean))].sort(),
@@ -126,14 +139,20 @@ export default function Home() {
       filtered = filtered.filter(item => item.thickness === parseFloat(selectedThickness));
     }
 
-    // Length filter
-    if (selectedLength) {
-      filtered = filtered.filter(item => item.length === parseFloat(selectedLength));
+    // Length range filter
+    if (minLength) {
+      filtered = filtered.filter(item => item.length >= parseFloat(minLength));
+    }
+    if (maxLength) {
+      filtered = filtered.filter(item => item.length <= parseFloat(maxLength));
     }
 
-    // Width filter
-    if (selectedWidth) {
-      filtered = filtered.filter(item => item.width === parseFloat(selectedWidth));
+    // Width range filter
+    if (minWidth) {
+      filtered = filtered.filter(item => item.width >= parseFloat(minWidth));
+    }
+    if (maxWidth) {
+      filtered = filtered.filter(item => item.width <= parseFloat(maxWidth));
     }
 
     // Finish filter
@@ -177,15 +196,17 @@ export default function Home() {
 
     setFilteredInventory(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, selectedLength, selectedWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, selectedQty, searchQuery]);
+  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, minLength, maxLength, minWidth, maxWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, selectedQty, searchQuery]);
 
   // Reset all filters
   const resetFilters = () => {
     setSelectedMaterial('');
     setSelectedInventoryId('');
     setSelectedThickness('');
-    setSelectedLength('');
-    setSelectedWidth('');
+    setMinLength('');
+    setMaxLength('');
+    setMinWidth('');
+    setMaxWidth('');
     setSelectedQty('');
     setSelectedFinish('');
     setSelectedGrade('');
@@ -275,34 +296,46 @@ export default function Home() {
                   </select>
                 </div>
 
-                {/* Length */}
+                {/* Length Range */}
                 <div>
                   <label className="text-xs text-blue-100 mb-1 block">Length (cm)</label>
-                  <select
-                    value={selectedLength}
-                    onChange={(e) => setSelectedLength(e.target.value)}
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
-                  >
-                    <option value="">All</option>
-                    {dynamicOptions.lengths?.map(l => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={minLength}
+                      onChange={(e) => setMinLength(e.target.value)}
+                      placeholder="From"
+                      className="w-1/2 text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                    />
+                    <input
+                      type="number"
+                      value={maxLength}
+                      onChange={(e) => setMaxLength(e.target.value)}
+                      placeholder={dynamicOptions.maxLength || "To"}
+                      className="w-1/2 text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                    />
+                  </div>
                 </div>
 
-                {/* Width */}
+                {/* Width Range */}
                 <div>
                   <label className="text-xs text-blue-100 mb-1 block">Width (cm)</label>
-                  <select
-                    value={selectedWidth}
-                    onChange={(e) => setSelectedWidth(e.target.value)}
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
-                  >
-                    <option value="">All</option>
-                    {dynamicOptions.widths?.map(w => (
-                      <option key={w} value={w}>{w}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={minWidth}
+                      onChange={(e) => setMinWidth(e.target.value)}
+                      placeholder="From"
+                      className="w-1/2 text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                    />
+                    <input
+                      type="number"
+                      value={maxWidth}
+                      onChange={(e) => setMaxWidth(e.target.value)}
+                      placeholder={dynamicOptions.maxWidth || "To"}
+                      className="w-1/2 text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                    />
+                  </div>
                 </div>
               </div>
 
