@@ -19,9 +19,8 @@ export default function Home() {
   const [selectedThickness, setSelectedThickness] = useState('');
   const [selectedLength, setSelectedLength] = useState('');
   const [selectedWidth, setSelectedWidth] = useState('');
+  const [selectedQty, setSelectedQty] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [minQty, setMinQty] = useState('');
-  const [maxQty, setMaxQty] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,6 +48,59 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Calculate dynamic filter options based on current selections
+  const getDynamicFilterOptions = () => {
+    let filteredData = [...inventory];
+
+    // Apply each filter progressively to get available options
+    if (selectedMaterial) {
+      filteredData = filteredData.filter(item => item.material === selectedMaterial);
+    }
+    if (selectedInventoryId) {
+      filteredData = filteredData.filter(item => item.inventoryId === selectedInventoryId);
+    }
+    if (selectedThickness) {
+      filteredData = filteredData.filter(item => item.thickness === parseFloat(selectedThickness));
+    }
+    if (selectedLength) {
+      filteredData = filteredData.filter(item => item.length === parseFloat(selectedLength));
+    }
+    if (selectedWidth) {
+      filteredData = filteredData.filter(item => item.width === parseFloat(selectedWidth));
+    }
+    if (selectedQty) {
+      filteredData = filteredData.filter(item => item.qty === parseInt(selectedQty));
+    }
+    if (selectedFinish) {
+      filteredData = filteredData.filter(item => item.finish === selectedFinish);
+    }
+    if (selectedGrade) {
+      filteredData = filteredData.filter(item => item.grade === selectedGrade);
+    }
+    if (selectedShelf) {
+      filteredData = filteredData.filter(item => item.shelf === selectedShelf);
+    }
+    if (selectedColor) {
+      filteredData = filteredData.filter(item => item.color === selectedColor);
+    }
+
+    // Calculate options from filtered data
+    return {
+      materials: [...new Set(filteredData.map(item => item.material))].sort(),
+      inventoryIds: [...new Set(filteredData.map(item => item.inventoryId).filter(Boolean))].sort(),
+      thicknesses: [...new Set(filteredData.map(item => item.thickness).filter(Boolean))].sort((a, b) => a - b),
+      lengths: [...new Set(filteredData.map(item => item.length).filter(Boolean))].sort((a, b) => a - b),
+      widths: [...new Set(filteredData.map(item => item.width).filter(Boolean))].sort((a, b) => a - b),
+      quantities: [...new Set(filteredData.map(item => item.qty).filter(q => q !== null && q !== undefined))].sort((a, b) => a - b),
+      finishes: [...new Set(filteredData.map(item => item.finish).filter(Boolean))].sort(),
+      grades: [...new Set(filteredData.map(item => item.grade).filter(Boolean))].sort(),
+      shelves: [...new Set(filteredData.map(item => item.shelf).filter(Boolean))].sort(),
+      colors: [...new Set(filteredData.map(item => item.color).filter(Boolean))].sort(),
+    };
+  };
+
+  const dynamicOptions = getDynamicFilterOptions();
 
   // Initial load - always fetch fresh data
   useEffect(() => {
@@ -108,12 +160,9 @@ export default function Home() {
       filtered = filtered.filter(item => item.color === selectedColor);
     }
 
-    // Quantity range filter
-    if (minQty) {
-      filtered = filtered.filter(item => item.qty >= parseInt(minQty));
-    }
-    if (maxQty) {
-      filtered = filtered.filter(item => item.qty <= parseInt(maxQty));
+    // Quantity filter
+    if (selectedQty) {
+      filtered = filtered.filter(item => item.qty === parseInt(selectedQty));
     }
 
     // Search query (searches across all fields)
@@ -132,7 +181,7 @@ export default function Home() {
 
     setFilteredInventory(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, selectedLength, selectedWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, minQty, maxQty, searchQuery]);
+  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, selectedLength, selectedWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, selectedQty, searchQuery]);
 
   // Reset all filters
   const resetFilters = () => {
@@ -141,13 +190,12 @@ export default function Home() {
     setSelectedThickness('');
     setSelectedLength('');
     setSelectedWidth('');
+    setSelectedQty('');
     setSelectedFinish('');
     setSelectedGrade('');
     setSelectedShelf('');
     setSelectedColor('');
     setSearchQuery('');
-    setMinQty('');
-    setMaxQty('');
   };
 
   // Pagination
@@ -195,7 +243,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All IDs</option>
-                    {filterOptions.inventoryIds?.map(id => (
+                    {dynamicOptions.inventoryIds?.map(id => (
                       <option key={id} value={id}>{id}</option>
                     ))}
                   </select>
@@ -210,7 +258,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Materials</option>
-                    {filterOptions.materials?.map(material => (
+                    {dynamicOptions.materials?.map(material => (
                       <option key={material} value={material}>{material}</option>
                     ))}
                   </select>
@@ -225,7 +273,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All</option>
-                    {filterOptions.thicknesses?.map(t => (
+                    {dynamicOptions.thicknesses?.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
@@ -240,7 +288,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All</option>
-                    {filterOptions.lengths?.map(l => (
+                    {dynamicOptions.lengths?.map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
@@ -255,7 +303,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All</option>
-                    {filterOptions.widths?.map(w => (
+                    {dynamicOptions.widths?.map(w => (
                       <option key={w} value={w}>{w}</option>
                     ))}
                   </select>
@@ -263,29 +311,20 @@ export default function Home() {
               </div>
 
               {/* Row 2: Additional filters */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
-                {/* Qty Min */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+                {/* Qty */}
                 <div>
-                  <label className="text-xs text-blue-100 mb-1 block">Min Qty</label>
-                  <input
-                    type="number"
-                    value={minQty}
-                    onChange={(e) => setMinQty(e.target.value)}
-                    placeholder="Min"
+                  <label className="text-xs text-blue-100 mb-1 block">Qty</label>
+                  <select
+                    value={selectedQty}
+                    onChange={(e) => setSelectedQty(e.target.value)}
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
-                  />
-                </div>
-
-                {/* Qty Max */}
-                <div>
-                  <label className="text-xs text-blue-100 mb-1 block">Max Qty</label>
-                  <input
-                    type="number"
-                    value={maxQty}
-                    onChange={(e) => setMaxQty(e.target.value)}
-                    placeholder="Max"
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
-                  />
+                  >
+                    <option value="">All</option>
+                    {dynamicOptions.quantities?.map(qty => (
+                      <option key={qty} value={qty}>{qty}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Finish */}
@@ -297,7 +336,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Finishes</option>
-                    {filterOptions.finishes?.map(finish => (
+                    {dynamicOptions.finishes?.map(finish => (
                       <option key={finish} value={finish}>{finish}</option>
                     ))}
                   </select>
@@ -312,7 +351,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Grades</option>
-                    {filterOptions.grades?.map(grade => (
+                    {dynamicOptions.grades?.map(grade => (
                       <option key={grade} value={grade}>{grade}</option>
                     ))}
                   </select>
@@ -327,7 +366,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Shelves</option>
-                    {filterOptions.shelves?.map(shelf => (
+                    {dynamicOptions.shelves?.map(shelf => (
                       <option key={shelf} value={shelf}>{shelf}</option>
                     ))}
                   </select>
@@ -342,7 +381,7 @@ export default function Home() {
                     className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Colors</option>
-                    {filterOptions.colors?.map(color => (
+                    {dynamicOptions.colors?.map(color => (
                       <option key={color} value={color}>{color}</option>
                     ))}
                   </select>
