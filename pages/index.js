@@ -14,6 +14,11 @@ export default function Home() {
   const [selectedFinish, setSelectedFinish] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedShelf, setSelectedShelf] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedInventoryId, setSelectedInventoryId] = useState('');
+  const [selectedThickness, setSelectedThickness] = useState('');
+  const [selectedLength, setSelectedLength] = useState('');
+  const [selectedWidth, setSelectedWidth] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [minQty, setMinQty] = useState('');
   const [maxQty, setMaxQty] = useState('');
@@ -22,13 +27,14 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
-  // Fetch inventory data
-  const fetchInventory = async () => {
+  // Fetch inventory data with optional refresh
+  const fetchInventory = async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/inventory');
+      const url = forceRefresh ? '/api/inventory?refresh=true' : '/api/inventory';
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch inventory');
 
       const data = await response.json();
@@ -44,12 +50,12 @@ export default function Home() {
     }
   };
 
-  // Initial load
+  // Initial load - always fetch fresh data
   useEffect(() => {
-    fetchInventory();
+    fetchInventory(true); // Force fresh data on page load
 
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(fetchInventory, 5 * 60 * 1000);
+    // Auto-refresh every 60 minutes
+    const interval = setInterval(() => fetchInventory(true), 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -60,6 +66,26 @@ export default function Home() {
     // Material filter
     if (selectedMaterial) {
       filtered = filtered.filter(item => item.material === selectedMaterial);
+    }
+
+    // Inventory ID filter
+    if (selectedInventoryId) {
+      filtered = filtered.filter(item => item.inventoryId === selectedInventoryId);
+    }
+
+    // Thickness filter
+    if (selectedThickness) {
+      filtered = filtered.filter(item => item.thickness === parseFloat(selectedThickness));
+    }
+
+    // Length filter
+    if (selectedLength) {
+      filtered = filtered.filter(item => item.length === parseFloat(selectedLength));
+    }
+
+    // Width filter
+    if (selectedWidth) {
+      filtered = filtered.filter(item => item.width === parseFloat(selectedWidth));
     }
 
     // Finish filter
@@ -75,6 +101,11 @@ export default function Home() {
     // Shelf filter
     if (selectedShelf) {
       filtered = filtered.filter(item => item.shelf === selectedShelf);
+    }
+
+    // Color filter
+    if (selectedColor) {
+      filtered = filtered.filter(item => item.color === selectedColor);
     }
 
     // Quantity range filter
@@ -94,20 +125,26 @@ export default function Home() {
         item.finish.toLowerCase().includes(query) ||
         item.grade.toLowerCase().includes(query) ||
         item.shelf.toLowerCase().includes(query) ||
-        item.notes.toLowerCase().includes(query)
+        item.notes.toLowerCase().includes(query) ||
+        item.color?.toLowerCase().includes(query)
       );
     }
 
     setFilteredInventory(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [inventory, selectedMaterial, selectedFinish, selectedGrade, selectedShelf, minQty, maxQty, searchQuery]);
+  }, [inventory, selectedMaterial, selectedInventoryId, selectedThickness, selectedLength, selectedWidth, selectedFinish, selectedGrade, selectedShelf, selectedColor, minQty, maxQty, searchQuery]);
 
   // Reset all filters
   const resetFilters = () => {
     setSelectedMaterial('');
+    setSelectedInventoryId('');
+    setSelectedThickness('');
+    setSelectedLength('');
+    setSelectedWidth('');
     setSelectedFinish('');
     setSelectedGrade('');
     setSelectedShelf('');
+    setSelectedColor('');
     setSearchQuery('');
     setMinQty('');
     setMaxQty('');
@@ -137,23 +174,40 @@ export default function Home() {
                 <p className="text-blue-100 mt-2">Real-time materials inventory system</p>
               </div>
               <button
-                onClick={fetchInventory}
+                onClick={() => fetchInventory(true)}
                 disabled={loading}
                 className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
               >
-                🔄 {loading ? 'Loading...' : 'Refresh'}
+                🔄 {loading ? 'Loading...' : 'Manual Refresh'}
               </button>
             </div>
 
             {/* Filters in Header */}
             <div className="bg-blue-700 bg-opacity-50 rounded-lg p-4 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {/* Material Type */}
+              {/* Row 1: Main filters */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+                {/* Inventory ID */}
                 <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Inventory ID</label>
+                  <select
+                    value={selectedInventoryId}
+                    onChange={(e) => setSelectedInventoryId(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">All IDs</option>
+                    {filterOptions.inventoryIds?.map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Material */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Material</label>
                   <select
                     value={selectedMaterial}
                     onChange={(e) => setSelectedMaterial(e.target.value)}
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Materials</option>
                     {filterOptions.materials?.map(material => (
@@ -162,12 +216,85 @@ export default function Home() {
                   </select>
                 </div>
 
+                {/* Thickness */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Thickness (mm)</label>
+                  <select
+                    value={selectedThickness}
+                    onChange={(e) => setSelectedThickness(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">All</option>
+                    {filterOptions.thicknesses?.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Length */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Length (cm)</label>
+                  <select
+                    value={selectedLength}
+                    onChange={(e) => setSelectedLength(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">All</option>
+                    {filterOptions.lengths?.map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Width */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Width (cm)</label>
+                  <select
+                    value={selectedWidth}
+                    onChange={(e) => setSelectedWidth(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">All</option>
+                    {filterOptions.widths?.map(w => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Additional filters */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+                {/* Qty Min */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Min Qty</label>
+                  <input
+                    type="number"
+                    value={minQty}
+                    onChange={(e) => setMinQty(e.target.value)}
+                    placeholder="Min"
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+
+                {/* Qty Max */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Max Qty</label>
+                  <input
+                    type="number"
+                    value={maxQty}
+                    onChange={(e) => setMaxQty(e.target.value)}
+                    placeholder="Max"
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+
                 {/* Finish */}
                 <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Finish</label>
                   <select
                     value={selectedFinish}
                     onChange={(e) => setSelectedFinish(e.target.value)}
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Finishes</option>
                     {filterOptions.finishes?.map(finish => (
@@ -178,10 +305,11 @@ export default function Home() {
 
                 {/* Grade */}
                 <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Grade</label>
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Grades</option>
                     {filterOptions.grades?.map(grade => (
@@ -192,10 +320,11 @@ export default function Home() {
 
                 {/* Shelf */}
                 <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Shelf</label>
                   <select
                     value={selectedShelf}
                     onChange={(e) => setSelectedShelf(e.target.value)}
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">All Shelves</option>
                     {filterOptions.shelves?.map(shelf => (
@@ -204,25 +333,36 @@ export default function Home() {
                   </select>
                 </div>
 
-                {/* Search */}
-                <div className="md:col-span-2">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-                  />
+                {/* Fill Color */}
+                <div>
+                  <label className="text-xs text-blue-100 mb-1 block">Fill Color</label>
+                  <select
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value)}
+                    className="w-full text-gray-900 border border-blue-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">All Colors</option>
+                    {filterOptions.colors?.map(color => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {/* Reset Button */}
-              <div className="mt-3 flex justify-end">
+              {/* Row 3: Search and Reset */}
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search all fields..."
+                  className="flex-1 text-gray-900 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300"
+                />
                 <button
                   onClick={resetFilters}
-                  className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-1 rounded-lg text-sm transition"
+                  className="bg-blue-800 hover:bg-blue-900 text-white px-6 py-2 rounded-lg text-sm transition whitespace-nowrap"
                 >
-                  ↺ Reset Filters
+                  ↺ Reset All
                 </button>
               </div>
             </div>
@@ -272,8 +412,8 @@ export default function Home() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventory ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thickness (mm)</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Length (cm)</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Width (cm)</th>
@@ -281,18 +421,19 @@ export default function Home() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shelf</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fill Color</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {currentItems.map((item, index) => (
-                        <tr key={`${item.material}-${item.inventoryId}-${index}`} className="hover:bg-gray-50">
+                        <tr key={`${item.material}-${item.inventoryId}-${index}`} className="hover:bg-gray-50" style={{backgroundColor: item.hexColor ? `${item.hexColor}20` : 'transparent'}}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.inventoryId}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                               {item.material}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.inventoryId}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.thickness}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.length}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.width}</td>
@@ -304,6 +445,16 @@ export default function Home() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.finish}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.grade}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.shelf}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-6 h-6 rounded border border-gray-300"
+                                style={{backgroundColor: item.hexColor || '#FFFFFF'}}
+                                title={item.hexColor}
+                              ></div>
+                              <span className="text-gray-700">{item.color}</span>
+                            </div>
+                          </td>
                           <td className="px-6 py-4 text-sm text-gray-500">{item.notes}</td>
                         </tr>
                       ))}

@@ -19,8 +19,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check if we have cached data
     const cacheKey = 'inventory_data';
+
+    // Check if manual refresh is requested
+    const forceRefresh = req.query.refresh === 'true';
+
+    if (forceRefresh) {
+      console.log('Manual refresh requested - clearing cache');
+      cache.del(cacheKey);
+    }
+
+    // Check if we have cached data
     let data = cache.get(cacheKey);
 
     if (!data) {
